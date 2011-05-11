@@ -1,1 +1,42 @@
-Mango script is a javascript library that copies the MongoDB Shell commands and syntax to be used on native javascript objects and arrays.
+Mango script is a javascript library that copies the MongoDB Shell
+commands and syntax to be used on native javascript objects and arrays.
+
+use:
+Mango = createMango({*options*})(); //to inicialise you can use Mango({*options*}) if you wish to change settings
+options:
+	proto:  true/false // true adds the functions (find) to the array prototype, default:false
+	copy : 'superAwesomeCopy'|'deepCopy'|'clone'|'copy' or function //copy function used to make results
+		-> default: function superAweSomeCopy(val){return val};
+
+if proto is set use
+arr.find(query,options); (options: limit/skip/fields) //like nodejs-native-mongodb driver
+if not
+Mango.find(arr,query,options);
+
+created by: Daniel Boros
+
+Check out test.html for examples!
+
+Links:
+http://www.mongodb.org/display/DOCS/Advanced+Queries#AdvancedQueries-%24exists
+http://oranlooney.com/static/javascript/deepCopy.js
+
+TODO LIST:
++HELP
++add update,remove
+
+LICENSE:
+
+	This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+		
