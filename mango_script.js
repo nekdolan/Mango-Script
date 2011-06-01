@@ -338,7 +338,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 	
 **/
-   
+         
     function getType(val){
         var type = typeof(val);
         if(type == 'object'){
@@ -374,12 +374,12 @@
     }  
     function $eq(val1,val2,rec){
         var type = getType(val1);
-        var type2 = getType(val2);
+        var type2 = getType(val2);        
+        if(type != 'array' && type2 == 'array')
+            return $in(val2,val1);
         if(type == 'regexp')
             return val1.test(val2);            
-        if(type == 'array' || type == 'object'){
-            if(type != type2)
-                return false;
+        if(type == 'array' || type == 'object'){            
             if(rec != undefined){
                 for(var i=0,l=rec.length;i<l;i++)
                     if(rec[i][0]==val1)
@@ -390,7 +390,7 @@
                 rec.push([val1,val2]);
             }
         }
-        if(type == 'array'){
+        if(type == 'array'){            
             if(val1.length != val2.length)
                 return false;                               
             for(var i=0,l=val1.length;i<l;i++)
@@ -399,6 +399,8 @@
             return true;
         }
         if(type == 'object'){
+            if(type2 != 'object')
+                return false;
             var count1 = 0,count2 = 0;
             for(var attr in val1){
                 if(!$eq(val1[attr],val2[attr],rec))
@@ -442,8 +444,11 @@
         if(getType(arr)!='array')
            return false;
         for(var i=0,l=arr.length;i<l;i++)
-            if($eq(val,arr[i]))
+            if($eq(val,arr[i])){
+                if($saveIndex == -1)
+                    $saveIndex = i;
                 return true;
+            }
         return false;
     }
     function $nin(arr,val){
@@ -503,6 +508,8 @@
         return false;        
     }
     function $where(val1,val2){
+        if($opt.leteval===false)
+            throw 'Eval is not On!';
         function doit(v2){
             return eval('('+v2+');');
         }
@@ -524,8 +531,329 @@
     function _in(arr,val){        
         for(var i=0,l=arr.length;i<l;i++)
             if(arr[i]===val)
-                return true;        
+                return true;                   
         return false;
+    }
+    function testOrder(val1,val2,rec){
+        var type1 = getType(val1);
+        var type2 = getType(val2);
+        if(type1 != type2)
+            return 0;
+        if(type1 == 'array'){
+            if(rec == undefined)
+                 rec = [];
+             for(var i=0,l=rec.length;i<l;i++)
+                 if(rec[i][0]==use1)
+                     return 0;
+             rec.push([val1]);
+             rec.push([val2]);
+            var use1=val1,use2=val2;
+            if(val1.length>val2.length){
+                use1=val2;
+                use2=val1;
+            }
+             for(var i=0;i<use1.length;i++){
+                var res = testOrder(use1[i],use2[i],res);
+                if(res != 0)
+                    return res;
+            }
+            return 0;
+        }
+        if(type1 == 'object'){
+            if(rec == undefined)
+                 rec = [];
+             for(var i=0,l=rec.length;i<l;i++)
+                 if(rec[i][0]==use1)
+                     return 0;
+             rec.push([val1]);
+             rec.push([val2]);
+             var l1 = 0,l2 = 0;
+            for(var attr in val1){
+                if(val2[attr] == undefined)
+                    return 0;
+                l1++;
+            }
+            for(var attr in val2)
+                if(l2>=l1)
+                    return 0;
+                else
+                    l2++;
+            for(var attr in val1){
+                var res = testOrder(val1[attr],val2[attr],res);
+                 if(res != 0)
+                     return res;
+            }
+            return 0;
+        }
+        if(val1>val2)
+            return 1;
+        if(val1==val2)
+            return 0;
+        return -1;
+    }
+    function sort(arr,obj){
+         if(getType(obj)!='object')
+             return;
+         function sortFunc(a,b){
+            var res = 0;
+             for(var attr in obj){
+                 var arrAttr = attr.split('.');
+                 var useA = a, useB = b;
+                 for(var i=0;i<arrAttr.length;i++){
+                     useA = useA[arrAttr[i]];
+                     useB = useB[arrAttr[i]];
+                 }      
+                res = testOrder(useA,useB);
+                if(obj[attr]==-1)
+                    res = res*-1;
+                if(res != 0)
+                    break;
+             }
+            return res;
+         }
+         return arr.sort(sortFunc);
+     }
+    function remove(query){
+        var saveFunc = $copyFunc;
+        $copyFunc = superAwesomeCopy;                
+        var base = returnObj.find(this,query);
+        $copyFunc = saveFunc;        
+        for(var i=0,l=base.length;i<l;i++)
+            for(var e=0,l2=this.length;e<l2;e++)
+                if(base[i] == this[e]){
+                    delete(this[e]);                    
+                    break;
+                }
+        return this;
+    }
+    function insert(doc){        
+        var type = getType(doc);
+        if(type != 'array' && type != 'object')       
+            throw 'type of doc must be array or object!';
+        if(type == 'array'){
+            for(var i=0,l=doc.length;i<l;i++)
+                this.push(doc[i]);
+        } else
+            if(type == 'object')
+                this.push(doc);
+        return this;
+    }     
+    function findOne(query){
+        var res = returnObj.find(this,query,{limit:1});
+        return res[0];
+    }
+    function update(query,doc,options){
+        $saveIndex = -1;
+        var saveFunc = $copyFunc;
+        $copyFunc = superAwesomeCopy;                
+        var base = returnObj.find(this,query);
+        $copyFunc = saveFunc;
+        var arrFind = [];
+        for(var i=0,l=base.length;i<l;i++)
+            for(var e=0,l2=this.length;e<l2;e++)
+                if(base[i] === this[e]){
+                    arrFind.push(e);
+                    break;
+                }
+        var isAtomic = true;
+        for(var attr in doc)
+            if($atomic[attr]!=1){
+                isAtomic = false;
+                break;
+            }     
+        var target;
+        if(base.length != 0)
+            target = [arrFind[0]];
+        if(options != undefined){
+            if(options.upsert === true && arrFind.length == 0){
+                var l = this.push({});
+                target = [l-1];
+            } else                 
+                if(options.multi === true)
+                    target = arrFind;
+        }
+        if(getType(target) != 'array' || target.length == 0)
+            return this;
+        var arrTest = ['$push','$pushAll','$addToSet','$pop','$pull','pullAll'];       
+        for(var i=0,l=target.length;i<l;i++){
+            if(isAtomic){
+                for(var attr in doc){    
+                    if(getType(doc[attr])!='object')
+                        break;
+                    for(var at in doc[attr]){
+                        var arrAt = at.split('.');
+                        var save = this[target[i]];
+                        var targetAt = save;
+                        var attrTarget = arrAt[0];
+                        for(var e=0;e<arrAt.length;e++){
+                            var index = arrAt[e];
+                            if(index == '$')
+                                index = $saveIndex;
+                            if(save[index]!=undefined){
+                                attrTarget = index;
+                                targetAt = save;
+                                save = save[attrTarget];
+                            } else
+                                break;                  
+                        }      
+                        if(_in(arrTest,attr))
+                            if(targetAt[attrTarget] != undefined && getType(targetAt[attrTarget])!='array')
+                                throw 'error, type of '+attr+' target must be array';                    
+                        switch(attr){
+                            case '$inc':
+                                if(targetAt[attrTarget] == undefined)
+                                    targetAt[attrTarget] = doc[attr][at];
+                                else
+                                    targetAt[attrTarget] += doc[attr][at];
+                            break;
+                            case '$set':
+                                    targetAt[attrTarget] = doc[attr][at];
+                            break;
+                            case '$unset':
+                                delete(targetAt[attrTarget]);
+                            break;                                
+                            case '$push':
+                                if(targetAt[attrTarget]==undefined)
+                                    targetAt[attrTarget] = [doc[attr][at]]
+                                else
+                                    targetAt[attrTarget].push(doc[attr][at]);      
+                            break;
+                            case '$pushAll':
+                                if(targetAt[attrTarget]==undefined)
+                                    targetAt[attrTarget] = owl.deepCopy(doc[attr][at]);
+                                else
+                                    targetAt[attrTarget] = targetAt[attrTarget].concat(owl.deepCopy(doc[attr][at]));
+                            break;
+                            case '$addToSet':
+                                if(targetAt[attrTarget]==undefined)
+                                      targetAt[attrTarget] = [];
+                                else {
+                                    var setArr = [doc[attr][at]];
+                                    if(getType(doc[attr][at])=='object' && doc[attr][at]['$each'] != undefined)    
+                                        setArr = doc[attr][at]['$each'];                                  
+                                    for(var a=0;a<setArr.length;a++){
+                                        var isInArray = false;
+                                        for(var e=0;e<targetAt[attrTarget].length;e++)
+                                            if($eq(targetAt[attrTarget][e],setArr[a]))
+                                                isInArray = true;
+                                        if(!isInArray)
+                                            targetAt[attrTarget].push(setArr[a]);
+                                    }
+                                }
+                            break;
+                            case '$pop':                                
+                                if(doc[attr][at] == 1)
+                                    targetAt[attrTarget].pop();
+                                else
+                                    if(doc[attr][at] == -1)
+                                    targetAt[attrTarget].shift();
+                            break;
+                            case '$pull' :                                
+                                if(getType(doc[attr][at])!='object') {
+                                    var deleteMe = false;
+                                    for(var e=0,l2=targetAt[attrTarget].length;e<l2;e++)                        
+                                        if($eq(targetAt[attrTarget][e],doc[attr][at])){
+                                            deleteMe = true;
+                                            break;
+                                        }                                            
+                                    if(deleteMe)
+                                        targetAt[attrTarget].splice(e,1);                                    
+                                } else {
+                                    saveFunc = $copyFunc;
+                                    $copyFunc = superAwesomeCopy;                
+                                    var arrPull = returnObj.find(targetAt[attrTarget],doc[attr][at]);
+                                    $copyFunc = saveFunc;                                
+                                    for(var a=0,l3=arrPull.length;a<l3;a++){
+                                        var deleteMe = false;
+                                        for(var e=0,l2=targetAt[attrTarget].length;e<l2;e++)                        
+                                            if(arrPull[a] === targetAt[attrTarget][e]){
+                                                deleteMe = true;
+                                                break;
+                                            }
+                                        if(deleteMe)
+                                            targetAt[attrTarget].splice(e,1);
+                                    }
+                                }
+                            break;
+                            case '$pullAll':
+                                for(var a=0;a<doc[attr][at].length;a++){
+                                    var deleteMe = false;
+                                    for(var e=0,l2=targetAt[attrTarget].length;e<l2;e++)                        
+                                        if($eq(targetAt[attrTarget][e],doc[attr][at][a])){
+                                            deleteMe = true;
+                                            break;
+                                        }                                            
+                                    if(deleteMe)
+                                        targetAt[attrTarget].splice(e,1);  
+                                }
+                            break;
+                            case '$rename':
+                                targetAt[doc[attr][at]] = targetAt[attrTarget];
+                                delete(targetAt[attrTarget]);
+                            break;
+                            case '$bit':
+                                if(getType(doc[attr][at])!='object' || getType(targetAt[attrTarget])!='number')
+                                    break;
+                                for(var att in doc[attr][at]){
+                                    if(att == 'and')
+                                        targetAt[attrTarget] = targetAt[attrTarget] & doc[attr][at][att];           
+                                    else
+                                        if(att == 'or')
+                                            targetAt[attrTarget] = targetAt[attrTarget] | doc[attr][at][att];
+                                }
+                            break;
+                        }
+                    }
+                }
+            } else {                
+                var ins = owl.deepCopy(doc);
+                this[target[i]] = ins;
+            }
+        }        
+        return this;
+    }
+    /*query   sort   remove  update  new  fields  upsert*/
+    function findAndModify(options){
+        var source = this;       
+        if(options == undefined)
+            throw 'error, missing parameter';
+        if(options.remove == undefined && options.update == undefined)
+           throw 'incorrect option resource';
+        if(options.query != undefined){
+            var saveFunc = $copyFunc;
+            $copyFunc = superAwesomeCopy;
+            source = returnObj.find(this,options.query,{sort:options.sort});
+            $copyFunc = saveFunc;
+        }
+        var res = source[0];
+        var ret = res;
+        if(options.upsert == true && res == undefined)
+            res = this[this.push({})-1];
+        if(options['new'] != true && options.remove != true)
+            ret = owl.deepCopy(res);
+        if(getType(options.update)=='object'){            
+            res = returnObj.update([res],{},options.update)[0];
+            for(var i=0,l=this.length;i<l;i++)
+                if(source[0]=== this[i]){
+                    this[i] = res;
+                    if(options['new'] == true)
+                        if(options.fields!=undefined){
+                            res = returnObj.find([res],{},{fields:options.fields})[0];                        
+                            return res;
+                        }
+                 }
+        } else
+            if(options.remove==true){
+                for(var i=0,l=this.length;i<l;i++)
+                    if(res === this[i]){
+                        delete(this[i]);
+                        return true;
+                    }
+            }
+        
+        if(options.fields!=undefined)
+            ret = returnObj.find([ret],{},{fields:options.fields})[0];
+        return ret;
     }
     function find(query, options){
         var arr = [];
@@ -635,14 +963,14 @@
                     continue;
                 }
                 if(options != undefined && options.limit != undefined && arr.length == options.limit)
-                    break;
+                    break;                        
                 arr.push(this[i]);                
             }            
         }
         var useFunc = $copyFunc;
         if($nor || _or)
             useFunc = superAwesomeCopy;
-        if(options != undefined && options.fields!=undefined && getType(options.fields)){
+        if(options != undefined && options.fields!=undefined && getType(options.fields)=='object'){
             if($copyFunc == superAwesomeCopy)
                 useFunc = owl.deepCopy;
             for(attr in options.fields){
@@ -668,19 +996,21 @@
         } else
         for(var i=0,returnArr=[],l=arr.length;i<l;i++)
             returnArr.push(useFunc(arr[i]));
+        if(options!=undefined && options.sort != undefined && getType(options.sort)=='object')
+            sort(returnArr,options.sort);  
         return returnArr;
     }
     function superAwesomeCopy(val){
         return val;
     }
     var $mongo = {'$eq':$eq,'$ne':$ne,'$gt':$gt,'$lt':$lt,'$gte':$gte, '$lte':$lte,'$in':$in,'$nin':$nin,'$all':$all,'$mod':$mod, '$exists':$exists,'$elemMatch':$elemMatch,'$not':$not,'$size':$size, '$type':$type};
-    var $main = {'find':find};   
-    var $opt = false;
+    var $main = {'find':find,'remove':remove,'insert':insert,'update':update,'findAndModify':findAndModify, 'findOne': findOne};   
+    var $opt = {proto:false,copy:'superAwesomeCopy',leteval:false};
+    var $atomic = {'$inc':1,'$set':1,'$unset':1,'$push':1,'$pushAll':1,'$addToSet':1,'$pop':1,'$pull':1,'$pullAll':1,'$rename':1,'$bit':1};
     var $or = false;
     var $nor = false;
-    var $copyFunc = superAwesomeCopy;
-    if(options != undefined && getType(options) == 'object')
-        $opt = options;
+    var $copyFunc;
+    var $saveIndex = -2;
     var returnObj = function(options){
         if(arguments.callee.find == undefined){       
            for(var attr in $main){
@@ -689,36 +1019,24 @@
                return $main[fnc].apply(arguments[0],Array.prototype.slice.call(arguments,1));
               };
              }(attr));
-            };
-          if($opt == false)
-              $opt = {};
-          else
-              if(options == undefined)
-                  options = $opt;
-        }
-       if(options != undefined && getType(options) == 'object'){   
-            var copy = owl.copy(options);
-            for(var attr in $opt)
-                if(copy[attr] == undefined)
-                    copy[attr] = $opt[attr];
-            $opt = copy;
-            if($opt.proto != undefined && $opt.proto === true)
+            };        
+            for(var attr in options)            
+                $opt[attr] = options[attr];            
+            if($opt.proto === true)
                 for(var attr in $main)
                     Array.prototype[attr] = $main[attr];
-            if($opt.copy != undefined){
-                var type = getType($opt.copy);
-                if(type == 'string'){
-                    if($opt.copy == 'superAwesomeCopy')
-                        $copyFunc = superAwesomeCopy;
-                    else
-                        if(owl[$opt.copy] != undefined)
-                            $copyFunc = owl[$opt.copy];
-                }
+            var type = getType($opt.copy);
+            if(type == 'string'){
+                if($opt.copy == 'superAwesomeCopy')
+                    $copyFunc = superAwesomeCopy;
+                else
+                    if(owl[$opt.copy] != undefined)
+                        $copyFunc = owl[$opt.copy];
+            } else
                 if(type == 'function')
                     $copyFunc = $opt.copy;
-            }            
         }
         return arguments.callee;
     }
-    return returnObj;
+    return returnObj(options);
 }

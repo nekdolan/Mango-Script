@@ -6,7 +6,7 @@
 <body>	
 <h2>SCRIPT</h2>
 <pre id="code">
-Mango = createMango({copy:'deepCopy'})();		
+Mango = createMango({copy:'deepCopy'});		
 var arr = [{name:'Bill',age:10,addr:{country:'US',town:'Washington'}},
 {name:'Joe',age:14,addr:{country:'England',town:'London'}},
 {name:'Luke',age:26,ip:[192,168,1,1]},{name:'Joana',age:21,ip:[192,168,1,2]}];
@@ -29,7 +29,7 @@ html += "\nquery3 ({$or:{name:'Bill',age:14}})\n"+print_r(Mango.find(arr,query3)
 html += "\nquery4 ({name:/jo.*/i})\n"+print_r(Mango.find(arr,query4));
 html += "\nquery5 ({'addr.country':{$in:['US','England']}})\n"+print_r(Mango.find(arr,query5));
 
-Mango({proto:true});
+createMango({proto:true});
 
 html += "\nquery6 ({},{skip:1,limit:2})\n"+print_r(arr.find({},options1));
 html += "\nquery7 ({ip:{$exists:true}},{fields:{name:1}})\n"+print_r(arr.find(query7,options2));
@@ -104,7 +104,7 @@ function print_r(x, max, sep, l) {
 };
 
 //TEST	
-		Mango = createMango({copy:'deepCopy'})();		
+		Mango = createMango({copy:'deepCopy'});		
 		var arr = [{name:'Bill',age:10,addr:{country:'US',town:'Washington'}},{name:'Joe',age:14,addr:{country:'England',town:'London'}},{name:'Luke',age:26,ip:[192,168,1,1]},{name:'Joana',age:21,ip:[192,168,1,2]}];
 		var query1 = {name:'Bill',age:10};
 		var query2 = {age:{$gt:10,$lte:21}};
@@ -124,7 +124,7 @@ function print_r(x, max, sep, l) {
 		html += "\n<b>query4 ({name:/jo.*/i})</b>\n"+print_r(Mango.find(arr,query4));
 		html += "\n<b>query5 ({'addr.country':{$in:['US','England']}})</b>\n"+print_r(Mango.find(arr,query5));
 		
-		Mango({proto:true});
+		createMango({proto:true});
 		
 		html += "\n<b>query6 ({},{skip:1,limit:2})</b>\n"+print_r(arr.find({},options1));
 		html += "\n<b>query7 ({ip:{$exists:true}},{fields:{name:1}})</b>\n"+print_r(arr.find(query7,options2));
