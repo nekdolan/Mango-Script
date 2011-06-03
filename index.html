@@ -118,26 +118,5 @@
 		Same as find only difference is that limit is set to one, and only a single object is returned instead of a collection.
 	</p>
 </div>
-	<script type="text/javascript">
-//TEST	
-/*
-var $mongo = {'$eq':$eq,'$ne':$ne,'$gt':$gt,'$lt':$lt,'$gte':$gte, '$lte':$lte,'$in':$in,'$nin':$nin,'$all':$all,'$mod':$mod, '$exists':$exists,'$elemMatch':$elemMatch,'$not':$not,'$size':$size, '$type':$type};
-    var $main = {'find':find,'remove':remove,'insert':insert,'update':update,'findAndModify':findAndModify, 'findOne': findOne};   
-    var $opt = {proto:false,copy:'superAwesomeCopy',leteval:false};
-    var $atomic = {'$inc':1,'$set':1,'$unset':1,'$push':1,'$pushAll':1,'$addToSet':1,'$pop':1,'$pull':1,'$pullAll':1,'$rename':1,'$bit':1};
-*/
-
-		var Mango = createMango({copy:'deepCopy',proto:true,leteval:true});		
-		var arr = [{id:1,a:5,str:'foo',arr:[0,2,5],pos:{left:10,top:20},m:[{a:10,b:0}]},
-		{id:2,a:5,str:'foo',arr:[1,2,5],pos:{right:10,top:20},m:[{a:10,b:20}]},
-		{id:3,a:5,str:'Zoo',arr:[3,4,5,6],pos:{left:10,bottom:20},m:[{a:10,b:30}]}];	
-		var str = "arr=[{id:1,a:5,str:'foo',arr:[0,2,5],pos:{left:10,top:20},m:[{a:10,b:0}]},<br />"
-		str += "{id:2,a:5,str:'foo',arr:[1,2,5],pos:{right:10,top:20},m:[{a:10,b:20}]},<br />"
-		str += "{id:3,a:5,str:'Zoo',arr:[3,4,5,6],pos:{left:10,bottom:20},m:[{a:10,b:30}]}];";		
-		
-		//document.getElementById('main').innerHTML += str;
-		/*		
-		*/
-	</script>
 </body>
 </html>	
