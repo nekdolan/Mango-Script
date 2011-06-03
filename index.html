@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<script type="text/javascript" src="mango_script.js"></script>		
+	</head>
+<body style="margin:0;padding:0">
+<div style="width:800px;margin-left:auto;margin-right:auto;background-color:#eee" id="main">	
+	<h1 style="margin-top:0px">Instructions</h1>	
+	<p>
+		<b>Initialize Mango:</b><br />
+		var Mango = createMango();<br />
+		or<br />createMango({proto:true})<br /><br />
+		<script type="text/javascript">
+			createMango({proto:true});
+		</script>
+		Opitions:
+		<ul>
+		<li>copy: the name of the copy function or the copy function itself. Possible values are 'copy', 'clone', 'deepCopy', 'superAwesomeCopy' or a function. Default Value is superAwesomeCopy. The copy function will be used to copy every match of the query into the resulting array. The default function passes the objects without change to the array. The copy, clone and deepCopy methods copy the content of the object creating a new one before it is pushed into the array. A custom function can be used instead of the predefined ones. It must look like this: function(val){ /*dosomething*/ return new_val; }
+		<li>proto: If set to true, than the mongo functions find, remove, insert, update, findAndModify, findOne will be added to the Array prototype. This would provide functionality more similar to MongoDB. Don't use it for js libraries. Default value is false!!
+		<li>leteval: You can use javascript code in a mongo querry, but that can be a potential threat on a webpage. This value must be set to true to allow the use of eval. Default value is false.
+		</ul>
+	</p>
+	<p>
+		<b>find:</b><br />
+		Mango.find(collection,query,options); //collection is just a simple, array of objects<br />
+		or if prote is true<br />
+		collection.find(query,options);<br /><br />
+		Example:<br />
+		[{id:1,name:'Joe'},{id:2,name:'Dave'},{id:3,name:'Tom'}].find({id:{$gt:1}},fields:{id:0},sort:{name:-1}});<br />
+		This query gets objects where id is greater then 1 (Dave and Tom), removes the id field and sorts the objects descending using the name field.<br />
+		Result (array): 
+		<script type="text/javascript">
+			document.write(JSON.stringify([{id:1,name:'Joe'},{id:2,name:'Dave'},{id:3,name:'Tom'}].find({id:{$gt:1}},{fields:{id:0},sort:{name:-1}})));
+		</script>
+		<br />
+		Options:
+		<ul>
+		<li>fields: Reduces the fields of the objects being returned. If no copy function was provided superAwesomeCopy will be overriden by deepCopy if the field option is set. Otherwise the field option would change (reduce) the original array. If that is what you want you must make a superAwesomeCopy of your own and set it when you create the Mango object. See above how. Use: fields:{fieldname:0,..} to remove fields, or fields:{fieldname:1,..} to keep fields but remove everything else.
+		<li>limit: Limit the number of objects returned.
+		<li>sort: Sort the array that is being returned. Use sort:{fieldname:-1,...} for descending or sort:{fieldname:1,...} for ascending.
+		</ul>
+	</p>
+	<p>
+		<b>insert:</b><br />		
+		There is an insert method, but its use is not recommended<br />
+		Use the native push(), concat() or splice() methods if possible.<br />
+		Mango.insert(collection,object); or Mango.insert(collection,collection_2);<br />
+		or<br />
+		collection.insert(object); or collection.insert(collection_2);<br />
+		Example:<br />
+		[{id:1,name:'Joe'},{id:2,name:'Dave'},{id:3,name:'Tom'}].insert({id:4,name:'Sam'});<br />
+		This example inserts a new object into the collection<br />
+		Result (array): 
+		<script type="text/javascript">
+			document.write(JSON.stringify([{id:1,name:'Joe'},{id:2,name:'Dave'},{id:3,name:'Tom'}].insert({id:4,name:'Sam'})));
+		</script>
+	</p>
+	<p>
+		<b>remove:</b><br />		
+		Mango.remove(collection,query);<br />
+		or<br />
+		collection.remove(query);<br />		
+		Example:<br />
+		[{id:1,name:'Joe'},{id:2,name:'Dave'},{id:3,name:'Tom'}].remove({$or:{id:2,name:'Tom'}});<br />
+		This example deletes the objects where the id is 2 or where the name field was set to 'Tom'<br />
+		Result (array): 
+		<script type="text/javascript">
+			document.write(JSON.stringify([{id:1,name:'Joe'},{id:2,name:'Dave'},{id:3,name:'Tom'}].remove({$or:{id:2,name:'Tom'}})));
+		</script>
+	</p>
+	<p>
+		<b>update:</b><br />		
+		Mango.update(collection,query,object,options);<br />		
+		or<br />
+		collection.update(query,object,options);<br />
+		Example:<br />
+		[{id:1,name:'Joe'},{id:2,name:'Dave'},{id:3,name:'Tom'}].update({id:2},{$set:{title:'mr.'}});<br />
+		This example updates the object where the id is 2 by adding a new field called title<br />
+		Result (array): 
+		<script type="text/javascript">
+			document.write(JSON.stringify([{id:1,name:'Joe'},{id:2,name:'Dave'},{id:3,name:'Tom'}].update({id:2},{$set:{title:'mr.'}})));
+		</script>	
+		<br />
+		Options:
+		<ul>
+		<li>upsert: inserts the object if no match was found
+		<li>multi: updates all matches instead of the default one	
+		</ul>		
+	</p>
+	<p>
+		<b>findAndModify:</b><br />		
+		Mango.findAndModify(collection,options);<br />		
+		or<br />
+		collection.findAndModify(options);<br />
+		Example:<br />
+		[{id:1,name:'Joe'},{id:2,name:'Dave'},{id:3,name:'Tom'}].findAndModify({query:{id:1},update:{name:'Sam'},'new':true});<br />
+		This example modifies the object where the id is 1 by replacing it with a new object, and returns the insertet object.<br />
+		Result (object): 
+		<script type="text/javascript">
+			document.write(JSON.stringify([{id:1,name:'Joe'},{id:2,name:'Dave'},{id:3,name:'Tom'}].findAndModify({query:{id:1},update:{name:'Sam'},'new':true})));
+		</script>	
+		<br />
+		Options:
+		<ul>
+		<li>query: the query object
+		<li>new: if set to true it returns the new inserted/updated object instead of the old. Defaut value is false!
+		<li>update: the update object (see update above)
+		<li>remove: if set to true, than the matched elements will be removed from the collection
+		<li>sort: the sort object determines the order of matched elements before the first is selected (see find above)
+		<li>fields: fields object (see find() above)
+		</ul>		
+	</p>
+	<p>
+		<b>findOne:</b><br />		
+		Mango.findOne(collection,query);<br />		
+		or<br />
+		collection.findOne(query);<br />
+		Same as find only difference is that limit is set to one, and only a single object is returned instead of a collection.
+	</p>
+</div>
+</body>
+</html>	
