@@ -1,29 +1,89 @@
-Mango script is a javascript library that copies the MongoDB Shell
-commands and syntax to be used on native javascript objects and arrays.
+Mango script is a javascript library that copies the MongoDB Shell commands and syntax to be used on native javascript objects and arrays.
 
-use:
-Mango = createMango({*options*})(); //to inicialise you can use Mango({*options*}) if you wish to change settings
-options:
-	proto:  true/false // true adds the functions (find) to the array prototype, default:false
-	copy : 'superAwesomeCopy'|'deepCopy'|'clone'|'copy' or function //copy function used to make results
-		-> default: function superAweSomeCopy(val){return val};
+#Instructions
 
-if proto is set use
-arr.find(query,options); (options: limit/skip/fields) //like nodejs-native-mongodb driver
-if not
-Mango.find(arr,query,options);
+Initialize Mango:
+var Mango = createMango();
+or
+createMango({proto:true})
 
-created by: Daniel Boros
+Opitions:
 
-Check out test.html for examples!
+    *copy: the name of the copy function or the copy function itself. Possible values are 'copy', 'clone', 'deepCopy', 'superAwesomeCopy' or a function. Default Value is superAwesomeCopy. The copy function will be used to copy every match of the query into the resulting array. The default function passes the objects without change to the array. The copy, clone and deepCopy methods copy the content of the object creating a new one before it is pushed into the array. A custom function can be used instead of the predefined ones. It must look like this: function(val){ /*dosomething*/ return new_val; }
+    *proto: If set to true, than the mongo functions find, remove, insert, update, findAndModify, findOne will be added to the Array prototype. This would provide functionality more similar to MongoDB. Don't use it for js libraries. Default value is false!!
+    *leteval: You can use javascript code in a mongo querry, but that can be a potential threat on a webpage. This value must be set to true to allow the use of eval. Default value is false. 
 
-Links:
-http://www.mongodb.org/display/DOCS/Advanced+Queries#AdvancedQueries-%24exists
-http://oranlooney.com/static/javascript/deepCopy.js
+#find:
+Mango.find(collection,query,options); //collection is just a simple, array of objects
+or if prote is true
+collection.find(query,options);
 
-TODO LIST:
-+HELP
-+add update,remove
+Example:
+[{id:1,name:'Joe'},{id:2,name:'Dave'},{id:3,name:'Tom'}].find({id:{$gt:1}},fields:{id:0},sort:{name:-1}});
+This query gets objects where id is greater then 1 (Dave and Tom), removes the id field and sorts the objects descending using the name field.
+Result (array): [{"name":"Tom"},{"name":"Dave"}]
+Options:
+
+    *fields: Reduces the fields of the objects being returned. If no copy function was provided superAwesomeCopy will be overriden by deepCopy if the field option is set. Otherwise the field option would change (reduce) the original array. If that is what you want you must make a superAwesomeCopy of your own and set it when you create the Mango object. See above how. Use: fields:{fieldname:0,..} to remove fields, or fields:{fieldname:1,..} to keep fields but remove everything else.
+    *limit: Limit the number of objects returned.
+    *sort: Sort the array that is being returned. Use sort:{fieldname:-1,...} for descending or sort:{fieldname:1,...} for ascending. 
+
+#insert:
+There is an insert method, but its use is not recommended
+Use the native push(), concat() or splice() methods if possible.
+Mango.insert(collection,object); or Mango.insert(collection,collection_2);
+or
+collection.insert(object); or collection.insert(collection_2);
+Example:
+[{id:1,name:'Joe'},{id:2,name:'Dave'},{id:3,name:'Tom'}].insert({id:4,name:'Sam'});
+This example inserts a new object into the collection
+Result (array): [{"id":1,"name":"Joe"},{"id":2,"name":"Dave"},{"id":3,"name":"Tom"},{"id":4,"name":"Sam"}]
+
+#remove:
+Mango.remove(collection,query);
+or
+collection.remove(query);
+Example:
+[{id:1,name:'Joe'},{id:2,name:'Dave'},{id:3,name:'Tom'}].remove({$or:{id:2,name:'Tom'}});
+This example deletes the objects where the id is 2 or where the name field was set to 'Tom'
+Result (array): [{"id":1,"name":"Joe"}]
+
+#update:
+Mango.update(collection,query,object,options);
+or
+collection.update(query,object,options);
+Example:
+[{id:1,name:'Joe'},{id:2,name:'Dave'},{id:3,name:'Tom'}].update({id:2},{$set:{title:'mr.'}});
+This example updates the object where the id is 2 by adding a new field called title
+Result (array): [{"id":1,"name":"Joe"},{"id":2,"name":"Dave","title":"mr."},{"id":3,"name":"Tom"}]
+Options:
+
+    *upsert: inserts the object if no match was found
+    *multi: updates all matches instead of the default one 
+
+#findAndModify:
+Mango.findAndModify(collection,options);
+or
+collection.findAndModify(options);
+Example:
+[{id:1,name:'Joe'},{id:2,name:'Dave'},{id:3,name:'Tom'}].findAndModify({query:{id:1},update:{name:'Sam'},'new':true});
+This example modifies the object where the id is 1 by replacing it with a new object, and returns the insertet object.
+Result (object): {"name":"Sam"}
+Options:
+
+    *query: the query object
+    *new: if set to true it returns the new inserted/updated object instead of the old. Defaut value is false!
+    *update: the update object (see update above)
+    *remove: if set to true, than the matched elements will be removed from the collection
+    *sort: the sort object determines the order of matched elements before the first is selected (see find above)
+    *fields: fields object (see find() above) 
+
+#findOne:
+Mango.findOne(collection,query);
+or
+collection.findOne(query);
+Same as find only difference is that limit is set to one, and only a single object is returned instead of a collection.
+
 
 LICENSE:
 

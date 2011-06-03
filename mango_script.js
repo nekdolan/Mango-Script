@@ -338,7 +338,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 	
 **/
-         
+
     function getType(val){
         var type = typeof(val);
         if(type == 'object'){
@@ -367,7 +367,7 @@
     }
     function $mod(val1,val2){
         if(getType(val1) != 'array' || val1.length!=2 || !testNum(val1[0]) || !testNum(val1[1]))
-            return false; //throw 'Incorrect type in $mod';        
+            return false;     
         if(val2 == undefined || !testNum(val2))
             return false;
         return (val2 % val1[0] == val1[1]);
@@ -466,14 +466,18 @@
         if(getType(obj)!='object' || getType(arr)!='array')
             return false;        
         var saveOr = $or, saveNor = $nor;
-        $or = true;
+        $or = false;
         $nor = false;
-        var arrGet = returnObj.find(arr,obj);
+        //var arrGet = returnObj.find(arr,obj);
+        var ret = false;
+        for(var i=0,l=arr.length;i<l;i++)
+            if(returnObj.find([arr[i]],obj).length>0){
+                ret = true;
+                break;
+            }
         $or = saveOr;
         $nor = saveNor;
-        if(arrGet.length != 0)
-            return true;
-        return false;
+        return ret;
     }
     function $not(obj,val){
         if(getType(obj)!='object')
@@ -621,7 +625,7 @@
         for(var i=0,l=base.length;i<l;i++)
             for(var e=0,l2=this.length;e<l2;e++)
                 if(base[i] == this[e]){
-                    delete(this[e]);                    
+                    this.splice(e,1);                    
                     break;
                 }
         return this;
@@ -632,7 +636,8 @@
             throw 'type of doc must be array or object!';
         if(type == 'array'){
             for(var i=0,l=doc.length;i<l;i++)
-                this.push(doc[i]);
+				if(getType(doc[i])=='object')
+					this.push(doc[i]);
         } else
             if(type == 'object')
                 this.push(doc);
@@ -812,7 +817,6 @@
         }        
         return this;
     }
-    /*query   sort   remove  update  new  fields  upsert*/
     function findAndModify(options){
         var source = this;       
         if(options == undefined)
@@ -835,33 +839,34 @@
             res = returnObj.update([res],{},options.update)[0];
             for(var i=0,l=this.length;i<l;i++)
                 if(source[0]=== this[i]){
-                    this[i] = res;
-                    if(options['new'] == true)
-                        if(options.fields!=undefined){
-                            res = returnObj.find([res],{},{fields:options.fields})[0];                        
-                            return res;
-                        }
+                    this[i] = res;					
+                    if(options['new'] == true){
+                        if(options.fields!=undefined)
+                            res = returnObj.find([res],{},{fields:options.fields})[0];					
+                        return res;
+                    }
                  }
         } else
             if(options.remove==true){
                 for(var i=0,l=this.length;i<l;i++)
-                    if(res === this[i]){
-                        delete(this[i]);
+                    if(res === this[i]){                        
+						this.splice(i,1);
                         return true;
                     }
             }
         
         if(options.fields!=undefined)
             ret = returnObj.find([ret],{},{fields:options.fields})[0];
+			console.log(this);
         return ret;
     }
     function find(query, options){
         var arr = [];
         var base = this;
         var _or = $or;
-        var qType = getType(query);
+        var qType = getType(query);        
         if(qType != 'object' && qType!='string')
-            return [];
+            return [];        
         if(query['$nor']!=undefined){
              $nor = true;
              var arrNot = returnObj.find(base,query['$nor']);
@@ -903,7 +908,7 @@
                          trace = false;
                          goOn = false;
                          break;           
-                    }                         
+                    }                  
                 if(!trace){
                     if(_or)
                         continue;
@@ -933,13 +938,19 @@
                         if(!$regex(val['$regex'],val['$options'],target))
                             goOn = false;
                     }                   
+                    trace = true;
                     for(var spec in val)
                         if(spec != '$regex' && spec != '$options')
                             if(!$mongo[spec](val[spec],target)){
                                goOn = false;
+                               trace = false;
                                break;
                             }
-                    if((!goOn && !_or)||(goOn && _or)) //goOn == _or?
+                    if(trace == true && _or){
+                        goOn = true;
+                        break;
+                    }
+                    if(!goOn && !_or)
                         break;
                     else
                         continue;
@@ -964,7 +975,7 @@
                 }
                 if(options != undefined && options.limit != undefined && arr.length == options.limit)
                     break;                        
-                arr.push(this[i]);                
+                arr.push(base[i]);                
             }            
         }
         var useFunc = $copyFunc;
