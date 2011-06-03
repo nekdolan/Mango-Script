@@ -8,7 +8,6 @@ or
 createMango({proto:true})
 
 Opitions:
-
     *copy: the name of the copy function or the copy function itself. Possible values are 'copy', 'clone', 'deepCopy', 'superAwesomeCopy' or a function. Default Value is superAwesomeCopy. The copy function will be used to copy every match of the query into the resulting array. The default function passes the objects without change to the array. The copy, clone and deepCopy methods copy the content of the object creating a new one before it is pushed into the array. A custom function can be used instead of the predefined ones. It must look like this: function(val){ /*dosomething*/ return new_val; }
     *proto: If set to true, than the mongo functions find, remove, insert, update, findAndModify, findOne will be added to the Array prototype. This would provide functionality more similar to MongoDB. Don't use it for js libraries. Default value is false!!
     *leteval: You can use javascript code in a mongo querry, but that can be a potential threat on a webpage. This value must be set to true to allow the use of eval. Default value is false. 
@@ -23,7 +22,6 @@ Example:
 This query gets objects where id is greater then 1 (Dave and Tom), removes the id field and sorts the objects descending using the name field.
 Result (array): [{"name":"Tom"},{"name":"Dave"}]
 Options:
-
     *fields: Reduces the fields of the objects being returned. If no copy function was provided superAwesomeCopy will be overriden by deepCopy if the field option is set. Otherwise the field option would change (reduce) the original array. If that is what you want you must make a superAwesomeCopy of your own and set it when you create the Mango object. See above how. Use: fields:{fieldname:0,..} to remove fields, or fields:{fieldname:1,..} to keep fields but remove everything else.
     *limit: Limit the number of objects returned.
     *sort: Sort the array that is being returned. Use sort:{fieldname:-1,...} for descending or sort:{fieldname:1,...} for ascending. 
@@ -57,7 +55,6 @@ Example:
 This example updates the object where the id is 2 by adding a new field called title
 Result (array): [{"id":1,"name":"Joe"},{"id":2,"name":"Dave","title":"mr."},{"id":3,"name":"Tom"}]
 Options:
-
     *upsert: inserts the object if no match was found
     *multi: updates all matches instead of the default one 
 
@@ -70,7 +67,6 @@ Example:
 This example modifies the object where the id is 1 by replacing it with a new object, and returns the insertet object.
 Result (object): {"name":"Sam"}
 Options:
-
     *query: the query object
     *new: if set to true it returns the new inserted/updated object instead of the old. Defaut value is false!
     *update: the update object (see update above)
@@ -84,9 +80,7 @@ or
 collection.findOne(query);
 Same as find only difference is that limit is set to one, and only a single object is returned instead of a collection.
 
-
 LICENSE:
-
 	This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
