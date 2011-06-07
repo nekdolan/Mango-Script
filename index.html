@@ -22,6 +22,7 @@
 				var str = Mango.shell(document.getElementById('shell_text').value);
 				document.getElementById('shell_text').value = '';
 				document.getElementById('result').innerHTML = str;
+				document.getElementById('shell_text').focus();
 				return false;
 			};			
 		</script>
