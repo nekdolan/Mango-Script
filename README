@@ -1,7 +1,5 @@
 Mango script is a javascript library that copies the MongoDB Shell commands and syntax to be used on native javascript objects and arrays.
 
-#Instructions
-
 Initialize Mango:
 var Mango = createMango();
 or
@@ -12,10 +10,30 @@ Opitions:
     *proto: If set to true, than the mongo functions find, remove, insert, update, findAndModify, findOne will be added to the Array prototype. This would provide functionality more similar to MongoDB. Don't use it for js libraries. Default value is false!!
     *leteval: You can use javascript code in a mongo querry, but that can be a potential threat on a webpage. This value must be set to true to allow the use of eval. Default value is false. 
 
-#find:
-Mango.find(collection,query,options); //collection is just a simple, array of objects
+You can use Mango(options); to change the settings later.
+
+createCollection
+Mango.createCollection(name);
+Creates an empty collection. Regular javascript arrays can be used as collections, but if you need something safer use this method to create Collection instances inside the Mango.db object.
+The function returns the newly created collection.
+Every mongo function is added by default to the Collection prototype, even if proto is set to false.
+Warning: older browsers (ie) may not be able to handle the Collection class properly!
+
+Example:
+Mango.createCollection('base').insert([{id:1,name:'Joe'},{id:2,name:'Dave'},{id:3,name:'Tom'}]);
+Mango.db.base.find();
+Result (array): [{"id":1,"name":"Joe"},{"id":2,"name":"Dave"},{"id":3,"name":"Tom"}] Hint: you can create a refference to Mango.db simply by assigning it to a variable:
+var db = Mango.db; //db.collection looks more mongoish
+
+shell
+Mango.shell(string);
+The shell executes Mongo functions (without eval) and creates collections automaticaly, if necesary
+
+find:
+Mango.find(array,query,options);
+or collection.find(query,options);
 or if prote is true
-collection.find(query,options);
+array.find(query,options);
 
 Example:
 [{id:1,name:'Joe'},{id:2,name:'Dave'},{id:3,name:'Tom'}].find({id:{$gt:1}},fields:{id:0},sort:{name:-1}});
@@ -26,30 +44,30 @@ Options:
     *limit: Limit the number of objects returned.
     *sort: Sort the array that is being returned. Use sort:{fieldname:-1,...} for descending or sort:{fieldname:1,...} for ascending. 
 
-#insert:
+insert:
 There is an insert method, but its use is not recommended
 Use the native push(), concat() or splice() methods if possible.
-Mango.insert(collection,object); or Mango.insert(collection,collection_2);
-or
-collection.insert(object); or collection.insert(collection_2);
+Mango.insert(array,object); or Mango.insert(array,array);
+or collection.insert(object); or collection.insert(array);
+or array.insert(object); or array.insert(array);
 Example:
 [{id:1,name:'Joe'},{id:2,name:'Dave'},{id:3,name:'Tom'}].insert({id:4,name:'Sam'});
-This example inserts a new object into the collection
+This example inserts a new object into the array
 Result (array): [{"id":1,"name":"Joe"},{"id":2,"name":"Dave"},{"id":3,"name":"Tom"},{"id":4,"name":"Sam"}]
 
-#remove:
-Mango.remove(collection,query);
-or
-collection.remove(query);
+remove:
+Mango.remove(array,query);
+or collection.remove(query);
+or array.remove(query);
 Example:
 [{id:1,name:'Joe'},{id:2,name:'Dave'},{id:3,name:'Tom'}].remove({$or:{id:2,name:'Tom'}});
 This example deletes the objects where the id is 2 or where the name field was set to 'Tom'
 Result (array): [{"id":1,"name":"Joe"}]
 
-#update:
-Mango.update(collection,query,object,options);
-or
-collection.update(query,object,options);
+update:
+Mango.update(array,query,object,options);
+or collection.update(query,object,options);
+or array.update(query,object,options);
 Example:
 [{id:1,name:'Joe'},{id:2,name:'Dave'},{id:3,name:'Tom'}].update({id:2},{$set:{title:'mr.'}});
 This example updates the object where the id is 2 by adding a new field called title
@@ -58,10 +76,10 @@ Options:
     *upsert: inserts the object if no match was found
     *multi: updates all matches instead of the default one 
 
-#findAndModify:
-Mango.findAndModify(collection,options);
-or
-collection.findAndModify(options);
+findAndModify:
+Mango.findAndModify(array,options);
+or collection.findAndModify(options);
+or array.findAndModify(options);
 Example:
 [{id:1,name:'Joe'},{id:2,name:'Dave'},{id:3,name:'Tom'}].findAndModify({query:{id:1},update:{name:'Sam'},'new':true});
 This example modifies the object where the id is 1 by replacing it with a new object, and returns the insertet object.
@@ -70,17 +88,18 @@ Options:
     *query: the query object
     *new: if set to true it returns the new inserted/updated object instead of the old. Defaut value is false!
     *update: the update object (see update above)
-    *remove: if set to true, than the matched elements will be removed from the collection
+    *remove: if set to true, than the matched elements will be removed from the collection/array
     *sort: the sort object determines the order of matched elements before the first is selected (see find above)
     *fields: fields object (see find() above) 
 
-#findOne:
-Mango.findOne(collection,query);
-or
-collection.findOne(query);
-Same as find only difference is that limit is set to one, and only a single object is returned instead of a collection.
+findOne:
+Mango.findOne(array,query);
+or collection.findOne(query);
+or array.findOne(query);
+Same as find only difference is that limit is set to one, and only a single object is returned instead of a collection/array. 
 
 LICENSE:
+
 	This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
@@ -93,4 +112,3 @@ LICENSE:
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
-		

@@ -631,7 +631,7 @@
         return this;
     }
     function insert(doc){        
-        var type = getType(doc);
+		var type = getType(doc);
         if(type != 'array' && type != 'object')       
             throw 'type of doc must be array or object!';
         if(type == 'array'){
@@ -857,16 +857,19 @@
         
         if(options.fields!=undefined)
             ret = returnObj.find([ret],{},{fields:options.fields})[0];
-			console.log(this);
         return ret;
     }
     function find(query, options){
         var arr = [];
         var base = this;
         var _or = $or;
-        var qType = getType(query);        
-        if(qType != 'object' && qType!='string')
-            return [];        
+        var qType = getType(query); 
+		if(query == undefined){
+			query = {};
+			qType = 'object';
+		} else
+			if(qType != 'object' && qType!='string')
+				return [];        
         if(query['$nor']!=undefined){
              $nor = true;
              var arrNot = returnObj.find(base,query['$nor']);
@@ -1011,13 +1014,103 @@
             sort(returnArr,options.sort);  
         return returnArr;
     }
-    function superAwesomeCopy(val){
-        return val;
-    }
-    var $mongo = {'$eq':$eq,'$ne':$ne,'$gt':$gt,'$lt':$lt,'$gte':$gte, '$lte':$lte,'$in':$in,'$nin':$nin,'$all':$all,'$mod':$mod, '$exists':$exists,'$elemMatch':$elemMatch,'$not':$not,'$size':$size, '$type':$type};
+	function Collection(){
+	}
+	Collection.prototype = [];	
+	function createCollection(name){
+		if($db[name]!=undefined || getType(name)!='string' || name=='')
+			throw 'collection error!';
+		$db[name] = new Collection();		
+		return $db[name];
+	}
+	function findEndBracket(str,bstart){
+		var start = 0;
+		var end = 0;
+		var coma = false;
+		var dcoma = false;
+		for(var i=bstart+1;i<str.length;i++){			
+			if(coma || dcoma){
+				var c = str.charAt(i);
+				if(c == '"' && dcoma)
+					dcoma = false;
+				else
+					if(c == "'" && coma)
+						coma = false;
+			} else
+				switch(str.charAt(i)){
+					case ')' :
+						if(start == end)
+							return i;
+						else
+							end++;
+					break;			
+					case '(' :
+						start++;
+					break;
+					case '"':
+						dcoma = true;
+					break;
+					case "'":
+						coma = true;
+					break;
+				}
+			if(end > start)
+				throw 'bracket error at: '+str.slice(i-10,i+10);
+		}		
+		return -1;
+	}
+	function getSegment(str,arr){		
+		var start = str.indexOf('(');
+		if(start == -1)
+			return;
+		var end = findEndBracket(str,start);
+		if(end == -1)
+			return;
+		var base = str.slice(0,start);
+		var main = str.slice(start+1,end);				
+		arr.push({base:base,main:main});
+		getSegment(str.slice(end+1,str.length),arr);
+	}
+	function shell(input){
+		if(input == undefined || getType(input)!='string')
+			return 'Input must be string!';
+		var objSeg = [];
+		getSegment(input,objSeg);
+		if(objSeg.length==0)
+			return 'Not found () segment';
+		var arrBase = objSeg[0].base.split('.');
+		if(arrBase.length!=3)
+			return 'command too short or too long!';
+		if(arrBase[0]!='db')
+			return 'command must start with: "db"';
+		var db = $db[arrBase[1]];
+		if(db==undefined)
+			db = createCollection(arrBase[1]);
+		objSeg[0].base = '.'+arrBase[2];
+		for(var i=0;i<objSeg.length;i++){
+			var obj = objSeg[i];
+			var base = obj.base.slice(1);			
+			try{
+				var main = JSON.parse('['+obj.main+']');
+			} catch (e){
+				return 'json error: '+obj.main;
+			}			
+			if($main[base]!=undefined){
+				db = $main[base].apply(db,main);
+			}
+		}		
+		if(getType(db)=='array')
+			return JSON.stringify(db.slice(0));	
+		return JSON.stringify(db);	
+	}
+    function superAwesomeCopy(val){        
+		return val;
+    }    
+	var $mongo = {'$eq':$eq,'$ne':$ne,'$gt':$gt,'$lt':$lt,'$gte':$gte, '$lte':$lte,'$in':$in,'$nin':$nin,'$all':$all,'$mod':$mod, '$exists':$exists,'$elemMatch':$elemMatch,'$not':$not,'$size':$size, '$type':$type};
     var $main = {'find':find,'remove':remove,'insert':insert,'update':update,'findAndModify':findAndModify, 'findOne': findOne};   
-    var $opt = {proto:false,copy:'superAwesomeCopy',leteval:false};
-    var $atomic = {'$inc':1,'$set':1,'$unset':1,'$push':1,'$pushAll':1,'$addToSet':1,'$pop':1,'$pull':1,'$pullAll':1,'$rename':1,'$bit':1};
+    var $opt = {proto:false,copy:'superAwesomeCopy',leteval:false};	
+    var $atomic = {'$inc':1,'$set':1,'$unset':1,'$push':1,'$pushAll':1,'$addToSet':1,'$pop':1,'$pull':1,'$pullAll':1,'$rename':1,'$bit':1};	
+	var $db = {};
     var $or = false;
     var $nor = false;
     var $copyFunc;
@@ -1025,28 +1118,32 @@
     var returnObj = function(options){
         if(arguments.callee.find == undefined){       
            for(var attr in $main){
+			 Collection.prototype[attr] = $main[attr];
              arguments.callee[attr] = (function(fnc){
               return function(){
                return $main[fnc].apply(arguments[0],Array.prototype.slice.call(arguments,1));
               };
              }(attr));
-            };        
-            for(var attr in options)            
-                $opt[attr] = options[attr];            
-            if($opt.proto === true)
-                for(var attr in $main)
-                    Array.prototype[attr] = $main[attr];
-            var type = getType($opt.copy);
-            if(type == 'string'){
-                if($opt.copy == 'superAwesomeCopy')
-                    $copyFunc = superAwesomeCopy;
-                else
-                    if(owl[$opt.copy] != undefined)
-                        $copyFunc = owl[$opt.copy];
-            } else
-                if(type == 'function')
-                    $copyFunc = $opt.copy;
-        }
+            };  			
+			arguments.callee.shell = shell;
+			arguments.callee.db = $db;
+			arguments.callee.createCollection = createCollection;
+		}
+		for(var attr in options)            
+			$opt[attr] = options[attr];            
+		if($opt.proto === true)
+			for(var attr in $main)
+				Array.prototype[attr] = $main[attr];
+		var type = getType($opt.copy);
+		if(type == 'string'){
+			if($opt.copy == 'superAwesomeCopy')
+				$copyFunc = superAwesomeCopy;
+			else
+				if(owl[$opt.copy] != undefined)
+					$copyFunc = owl[$opt.copy];
+		} else
+			if(type == 'function')
+				$copyFunc = $opt.copy;        
         return arguments.callee;
     }
     return returnObj(options);
